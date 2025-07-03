@@ -14,7 +14,7 @@ from datetime import datetime, timedelta
 
 logging.basicConfig(level=logging.INFO)
 
-BOT_TOKEN = "YOUR_TELEGRAM_BOT_TOKEN"  # ✅ Replace with your token
+BOT_TOKEN = "7825171005:AAFjH26MWNVuTOCDBGN0RZ4neA3ecg90MX8"  # ✅ Replace with your token
 ADMIN_PASSWORD = "nikita123"            # ✅ Replace with your password
 HOURS = list(range(12, 22))
 
