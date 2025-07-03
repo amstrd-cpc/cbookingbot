@@ -14,12 +14,12 @@ from datetime import datetime, timedelta
 
 logging.basicConfig(level=logging.INFO)
 
-BOT_TOKEN = "7825171005:AAFjH26MWNVuTOCDBGN0RZ4neA3ecg90MX8"   # <<<< Replace me
-ADMIN_PASSWORD = "nikita123"            # <<<< Replace me
+BOT_TOKEN = "YOUR_TELEGRAM_BOT_TOKEN"  # ✅ Replace with your token
+ADMIN_PASSWORD = "nikita123"            # ✅ Replace with your password
 HOURS = list(range(12, 22))
 
 # Conversation states
-SELECT_DATE, SELECT_TIME, CONFIRM_CANCEL, ADMIN_AUTH, ADMIN_PANEL, SELECT_PANEL_DATE, FORCE_CANCEL = range(7)
+SELECT_DATE, SELECT_TIME, CONFIRM_CANCEL, ADMIN_AUTH, SELECT_PANEL_DATE, FORCE_CANCEL = range(6)
 
 # In-memory admin session store
 admin_sessions = set()
@@ -31,6 +31,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "🎧 Welcome to the .clime training room Booking Bot!\n"
         "Use /book to reserve a time up to 7 days ahead.\n"
         "Use /cancel to cancel a future booking (1+ days ahead).\n"
+        "Admins: use /admin to log in."
     )
 
 # --- Booking flow ---
@@ -123,7 +124,10 @@ async def admin(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def admin_auth(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if update.message.text.strip() == ADMIN_PASSWORD:
         admin_sessions.add(update.effective_user.id)
-        await update.message.reply_text("✅ Admin login successful!\nUse /panel to view bookings.", reply_markup=ReplyKeyboardRemove())
+        await update.message.reply_text(
+            "✅ Admin login successful!\nUse /panel to view bookings.",
+            reply_markup=ReplyKeyboardRemove()
+        )
     else:
         await update.message.reply_text("❌ Wrong password.")
     return ConversationHandler.END
@@ -144,15 +148,6 @@ async def panel(update: Update, context: ContextTypes.DEFAULT_TYPE):
     reply_markup = InlineKeyboardMarkup(keyboard)
     await update.message.reply_text("📅 Select a date to view bookings:", reply_markup=reply_markup)
     return SELECT_PANEL_DATE
-
-
-async def force_cancel(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    query = update.callback_query
-    await query.answer()
-    booking_id = int(query.data.split("_")[1])
-    delete_booking(booking_id)
-    await query.edit_message_text("✅ Booking has been force-cancelled by admin.")
-    return ConversationHandler.END
 
 async def show_panel_for_date(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
@@ -177,6 +172,13 @@ async def show_panel_for_date(update: Update, context: ContextTypes.DEFAULT_TYPE
     await query.edit_message_text(msg + "\nClick to force-cancel any:", reply_markup=reply_markup)
     return FORCE_CANCEL
 
+async def force_cancel(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    query = update.callback_query
+    await query.answer()
+    booking_id = int(query.data.split("_")[1])
+    delete_booking(booking_id)
+    await query.edit_message_text("✅ Booking has been force-cancelled by admin.")
+    return ConversationHandler.END
 
 # --- Main ---
 
@@ -184,6 +186,7 @@ def main():
     init_db()
     app = ApplicationBuilder().token(BOT_TOKEN).build()
 
+    # Handlers
     app.add_handler(CommandHandler("start", start))
 
     book_handler = ConversationHandler(
@@ -206,22 +209,21 @@ def main():
         states={ADMIN_AUTH: [MessageHandler(filters.TEXT & ~filters.COMMAND, admin_auth)]},
         fallbacks=[]
     )
-    
-    panel_handler = ConversationHandler(
-    entry_points=[CommandHandler("panel", panel)],
-    states={
-        SELECT_PANEL_DATE: [CallbackQueryHandler(show_panel_for_date, pattern=r'^panel_date_')],
-        FORCE_CANCEL: [CallbackQueryHandler(force_cancel, pattern=r'^force_\d+$')],
-    },
-    fallbacks=[]
-)
 
-    app.add_handler(panel_handler)
+    panel_handler = ConversationHandler(
+        entry_points=[CommandHandler("panel", panel)],
+        states={
+            SELECT_PANEL_DATE: [CallbackQueryHandler(show_panel_for_date, pattern=r'^panel_date_')],
+            FORCE_CANCEL: [CallbackQueryHandler(force_cancel, pattern=r'^force_\d+$')],
+        },
+        fallbacks=[]
+    )
+
+    # Register once!
     app.add_handler(book_handler)
     app.add_handler(cancel_handler)
     app.add_handler(admin_auth_handler)
-    app.add_handler(CommandHandler("panel", panel))
-    app.add_handler(CallbackQueryHandler(force_cancel, pattern=r'^force_\d+$'))
+    app.add_handler(panel_handler)
 
     app.run_polling()
 
