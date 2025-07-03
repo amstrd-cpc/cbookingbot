@@ -31,7 +31,6 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "🎧 Welcome to the .clime training room Booking Bot!\n"
         "Use /book to reserve a time up to 7 days ahead.\n"
         "Use /cancel to cancel a future booking (1+ days ahead).\n"
-        "Admins: use /admin to log in."
     )
 
 # --- Booking flow ---
