@@ -16,6 +16,7 @@ logging.basicConfig(level=logging.INFO)
 
 BOT_TOKEN = "7825171005:AAFjH26MWNVuTOCDBGN0RZ4neA3ecg90MX8"  # ✅ Replace with your token
 ADMIN_PASSWORD = "nikita123"            # ✅ Replace with your password
+NOTIFY_USER_ID = 123456789              # ✅ Replace with the chat ID to notify
 HOURS = list(range(12, 22))
 
 # Conversation states
@@ -78,7 +79,16 @@ async def select_time(update: Update, context: ContextTypes.DEFAULT_TYPE):
     success = add_booking(username, date_str, selected_hour)
 
     if success:
-        await query.edit_message_text(f"✅ Booking confirmed for {date_str} at {selected_hour}:00.")
+        await query.edit_message_text(
+            f"✅ Booking confirmed for {date_str} at {selected_hour}:00."
+        )
+        await context.bot.send_message(
+            chat_id=NOTIFY_USER_ID,
+            text=(
+                f"📢 New booking by {username} for {date_str} at "
+                f"{selected_hour}:00."
+            ),
+        )
     else:
         await query.edit_message_text("❌ Sorry, that slot was just taken. Try /book again.")
     return ConversationHandler.END
