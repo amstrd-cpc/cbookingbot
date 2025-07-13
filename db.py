@@ -52,6 +52,14 @@ def get_future_bookings(username):
     conn.close()
     return results
 
+def get_booking_details(booking_id):
+    conn = sqlite3.connect(DB_PATH)
+    c = conn.cursor()
+    c.execute('SELECT id, username, date, hour FROM bookings WHERE id = ?', (booking_id,))
+    row = c.fetchone()
+    conn.close()
+    return row
+
 def delete_booking(booking_id):
     conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
