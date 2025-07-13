@@ -8,7 +8,8 @@ from telegram.ext import (
 )
 from db import (
     init_db, get_booked_slots, add_booking,
-    get_future_bookings, delete_booking, get_all_bookings
+    get_future_bookings, delete_booking, get_all_bookings,
+    get_booking_details,
 )
 from datetime import datetime, timedelta
 
@@ -120,8 +121,18 @@ async def confirm_cancel(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
     booking_id = int(query.data.split("_")[1])
+    details = get_booking_details(booking_id)
     delete_booking(booking_id)
     await query.edit_message_text("✅ Your booking has been cancelled.")
+    if details:
+        _, username, date_str, hour = details
+        await context.bot.send_message(
+            chat_id=NOTIFY_USER_ID,
+            text=(
+                f"📢 {username} cancelled their booking for {date_str} at "
+                f"{hour}:00."
+            ),
+        )
     return ConversationHandler.END
 
 # --- Admin auth & panel ---
